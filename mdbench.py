@@ -128,6 +128,8 @@ def make_dirs(root, count):
 	for i in range(count):
 		mkdir( gen_dir(root, i) )
 
+	fsync(root, dir_creates)
+
 def make_files(root, dir_count, file_count, size = 0, random_data = False):
 
 	for j in range(file_count):
@@ -137,6 +139,8 @@ def make_files(root, dir_count, file_count, size = 0, random_data = False):
 		else:
 			mkfile(gen_file(root, j), size, 1024, random_data = random_data)
 
+	fsync(root, file_creates)
+
 def del_files(root, dir_count, file_count):
 	for j in range(file_count):
 		if dir_count > 0:
@@ -145,13 +149,19 @@ def del_files(root, dir_count, file_count):
 		else:
 			rmfile(gen_file(root, j))
 
+	fsync(root, file_removes)
+
 def del_dirs(root, count):
 	for i in range(count):
 		rmdir( gen_dir(root, i) )
 
+	fsync(root, dir_removes)
+
 def stat_dirs(root, count):
 	for i in range(count):
 		statdir( gen_dir(root, i) )
+
+	fsync(root, dir_stats)
 
 def stat_files(root, dir_count, file_count):
 	for j in range(file_count):
@@ -161,6 +171,8 @@ def stat_files(root, dir_count, file_count):
 		else:
 			statfile(gen_file(root, j))
 
+	fsync(root, file_stats)
+
 def chmod_files(root, dir_count, file_count):
 	for j in range(file_count):
 		if dir_count > 0:
@@ -169,6 +181,8 @@ def chmod_files(root, dir_count, file_count):
 		else:
 			chmodfile(gen_file(root, j))
 
+	fsync(root, chmod_stats)
+
 def mv_files(root, dir_count, file_count):
 	for j in range(file_count):
 		if dir_count > 0:
@@ -176,6 +190,8 @@ def mv_files(root, dir_count, file_count):
 				mvfile(gen_file( gen_dir(root, i), j ))
 		else:
 			mvfile(gen_file(root, j))
+
+	fsync(root, mv_stats)
 
 
 def rmfile(f):
@@ -242,6 +258,13 @@ def mkfile(fname, size, chunk = 65536, sync = False, random_data = False) :
 
 	end = datetime.now()
 	file_creates.update(total_millis(end - start))
+
+# issues a directory fsync after every test to flush changes to object storage
+def fsync(root, stat):
+	start = datetime.now()
+	os.fsync(os.open(root, os.O_RDONLY))
+	end = datetime.now()
+	stat.update(total_millis(end - start))
 
 def total_micros(td):
 	return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10**6)
